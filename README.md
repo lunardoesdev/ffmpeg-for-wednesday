@@ -59,6 +59,11 @@ Each holds an installed prefix, flat - `lib/`, `include/`, `share/`:
 - `lib/libav*.a` - seven static libraries: `libavcodec.a`, `libavformat.a`,
   `libavfilter.a`, `libavutil.a`, `libswscale.a`, `libswresample.a`,
   `libavdevice.a`
+- `lib/libav*.so` - the same seven as shared libraries, built with
+  `--enable-shared` next to `--enable-static`. They are ordinary files, not
+  symlinks: FFmpeg's Android target installs them unversioned, which is how
+  Bionic's loader expects to find them (there is no `libavcodec.so.N` and
+  nothing to point at one).
 - `lib/pkgconfig/libav*.pc` - seven `.pc` files
 - `include/libav*/*.h` - 137 to 145 headers, depending on the branch
 
@@ -85,8 +90,15 @@ tar -C /some/prefix -xf dist/ffmpeg-9.0.2-aarch64-android33.tar.xz
   file (`${pcfiledir}/../..`), but the `Libs:` line carries absolute `-L` paths
   to the dependencies as they were built in the nest, so `pkg-config --static`
   needs those prefixes present.
-- **Static only**, and the external libraries compiled in are exactly six:
-  `zlib`, `bzlib`, `lzma`, `libopus`, `libvpx`, `libmp3lame`. Enable more by
+- **Both kinds of library**, and the external libraries compiled in are exactly
+  six: `zlib`, `bzlib`, `lzma`, `libopus`, `libvpx`, `libmp3lame`. The static
+  archives are linked into an application. The shared ones carry bzlib, lzma,
+  libopus, libvpx and libmp3lame inside them (the nest builds those static-only)
+  but **not zlib**: `readelf -d lib/libavcodec.so` lists
+  `NEEDED libz.so.1`, so a dynamic consumer needs that library next to them -
+  it comes from the nest's `zlib@aarch64-android33` entry,
+  `retrolunar cache push --cache dist/cache zlib@aarch64-android33`. The system
+  libraries (`libc`, `libm`, `liblog`) are on every Android. Enable more by
   adding recipes and rebuilding with the matching `--enable-*`.
 
 ## Checking
