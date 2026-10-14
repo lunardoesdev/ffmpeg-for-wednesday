@@ -87,9 +87,10 @@ tar -C /some/prefix -xf dist/ffmpeg-9.0.2-aarch64-android33.tar.xz
   ```
 
 - **The `.pc` files name the build machine.** Their `prefix` is relative to the
-  file (`${pcfiledir}/../..`), but the `Libs:` line carries absolute `-L` paths
-  to the dependencies as they were built in the nest, so `pkg-config --static`
-  needs those prefixes present.
+  file (`${pcfiledir}/../..`) and `Libs:` is just the library itself, but
+  `Libs.private:` - what a static link needs - carries absolute `-L` paths to
+  the dependencies as they were built in the nest, so `pkg-config --static`
+  wants those prefixes present.
 - **Both kinds of library**, and the external libraries compiled in are exactly
   six: `zlib`, `bzlib`, `lzma`, `libopus`, `libvpx`, `libmp3lame`. The static
   archives are linked into an application. The shared ones carry bzlib, lzma,
