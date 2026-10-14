@@ -1,0 +1,28 @@
+# The manifest of this directory's own package: the hand-over. Its name is the
+# directory name (`ffmpeg-wednesday`), so nothing here names it.
+version = "1"
+
+# The four FFmpeg branches, cross-built for aarch64-android33 (NDK r29).
+deps = [
+    "ffmpeg-6@aarch64-android33",
+    "ffmpeg-7@aarch64-android33",
+    "ffmpeg-8@aarch64-android33",
+    "ffmpeg-9@aarch64-android33",
+]
+
+# The package is what it hands over: export.sh packs each built prefix into one
+# tarball, and those tarballs are what this entry publishes. The version in each
+# name is read out of the built prefix (libavutil/ffversion.h), so the entry
+# cannot disagree with the library it names.
+#
+# RETROLUNAR_NEST points export.sh at the nest this build is writing to, which
+# is not necessarily the tool's default when --nest was passed.
+build = """
+mkdir -p \"$PREFIX/share/ffmpeg-wednesday\"
+RETROLUNAR_NEST=\"$NESTDIR\" sh \"$RECIPEDIR/export.sh\" \"$PREFIX/share/ffmpeg-wednesday\"
+"""
+
+# The recipes come from the checkout next to this one, relative to where the
+# tool is run - which is here.
+[repo.packages]
+url = "../retrolunar2-packages"
