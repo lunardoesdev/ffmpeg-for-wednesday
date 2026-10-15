@@ -13,7 +13,7 @@ export asks it for each branch's dependencies. The recipes come from the
 
 ## What is here
 
-- `export.sh` - writes one `*.tar.xz` per version plus `SHA256SUMS`.
+- `export.sh` - writes one `*.tar.gz` per version plus `SHA256SUMS`.
 - `GUIDE.md` - the walk-through, command by command.
 - `dist/` - where `sh export.sh` writes (produced, not committed).
 
@@ -22,17 +22,16 @@ export asks it for each branch's dependencies. The recipes come from the
 Step by step, the commands and what they print, is in [GUIDE.md](GUIDE.md).
 
 ```sh
-sh export.sh                       # -> dist/ffmpeg-<version>-aarch64-android33.tar.xz
+sh export.sh                       # -> dist/ffmpeg-<version>-aarch64-android33.tar.gz
 RETROLUNAR=/other/retrolunar sh export.sh    # tool elsewhere
 RETROLUNAR_PACKAGES=/other/tree sh export.sh # recipes elsewhere
 RETROLUNAR_NEST=/other/nest sh export.sh /tmp/out   # a nest elsewhere
 ```
 
-`RETROLUNAR_PACKAGES` defaults to the `retrolunar2-packages` checkout beside
-this project. Naming it explicitly is the point: a tree is where the closure is
-read from, and the tool's own default - the same repository, cloned into
-`~/.cache/retrolunar/packages` on first use - is not the checkout the entries
-were built from.
+No tree is named by default: the tool fetches its own - `retrolunar2-packages`,
+cloned into `~/.cache/retrolunar/packages` on first use - and that is where the
+closure is read from. `RETROLUNAR_PACKAGES` names one when the recipes come from
+somewhere else; nothing here points at a checkout on one machine.
 
 The script builds nothing: it packs the four entries the nest already holds, and
 asks the tool which libraries each branch's tarball has to carry. Those entries
@@ -48,10 +47,10 @@ retrolunar --packages ../retrolunar2-packages generate -x 'ffmpeg-9@aarch64-andr
 
 | tarball | version |
 |---|---|
-| `ffmpeg-6.1.6-aarch64-android33.tar.xz` | 6.1.6 |
-| `ffmpeg-7.1.5-aarch64-android33.tar.xz` | 7.1.5 |
-| `ffmpeg-8.1.3-aarch64-android33.tar.xz` | 8.1.3 |
-| `ffmpeg-9.0.2-aarch64-android33.tar.xz` | 9.0.2 |
+| `ffmpeg-6.1.6-aarch64-android33.tar.gz` | 6.1.6 |
+| `ffmpeg-7.1.5-aarch64-android33.tar.gz` | 7.1.5 |
+| `ffmpeg-8.1.3-aarch64-android33.tar.gz` | 8.1.3 |
+| `ffmpeg-9.0.2-aarch64-android33.tar.gz` | 9.0.2 |
 
 The version in the name is read from `include/libavutil/ffversion.h` inside the
 built prefix, so it cannot disagree with the library it names.
@@ -75,7 +74,7 @@ Each holds an installed prefix, flat - `lib/`, `include/`, `share/`:
 - `include/libav*/*.h` - 137 to 145 headers, depending on the branch
 
 ```sh
-tar -C /some/prefix -xf dist/ffmpeg-9.0.2-aarch64-android33.tar.xz
+tar -C /some/prefix -xf dist/ffmpeg-9.0.2-aarch64-android33.tar.gz
 ```
 
 How to link against one, with what the missing-symbols failure and its fix
@@ -106,6 +105,6 @@ measured, is the "Link against one" section of [GUIDE.md](GUIDE.md).
 
 ```sh
 sha256sum -c dist/SHA256SUMS
-tar -tJf dist/ffmpeg-6.1.6-aarch64-android33.tar.xz | head
+tar -tzf dist/ffmpeg-6.1.6-aarch64-android33.tar.gz | head
 ar t <extract>/lib/libavcodec.a | head        # members are ELF64 / AArch64
 ```

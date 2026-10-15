@@ -31,11 +31,10 @@ $ retrolunar --help
 $ RETROLUNAR=/path/to/retrolunar sh export.sh
 ```
 
-- The recipe tree the entries were built from: the `retrolunar2-packages`
-  checkout beside this project, or whatever `RETROLUNAR_PACKAGES` names. The
-  script names it on every call, which matters because a tree is where the
-  closure is read from; the tool's own default (2.14 and later) is that same
-  repository, cloned into `~/.cache/retrolunar/packages` on first use.
+- The recipe tree: `export.sh` names none, so the tool fetches its own -
+  retrolunar2-packages, cloned into `~/.cache/retrolunar/packages` on first use
+  (2.14 and later). `RETROLUNAR_PACKAGES` names a tree when the recipes come
+  from somewhere else.
 
 - Check that the entries are there:
 
@@ -63,16 +62,18 @@ $ retrolunar --packages ../retrolunar2-packages generate -x 'ffmpeg-6@aarch64-an
 ```sh
 $ cd ~/ond/git/ffmpeg-wednesday
 $ sh export.sh
-ffmpeg-6-6.1.6-aarch64-android33.tar.xz   35126332 bytes   191 files    998 objects in libavcodec.a
-ffmpeg-7-7.1.5-aarch64-android33.tar.xz   36568924 bytes   192 files   1030 objects in libavcodec.a
-ffmpeg-8-8.1.3-aarch64-android33.tar.xz   37740000 bytes   198 files   1064 objects in libavcodec.a
-ffmpeg-9-9.0.2-aarch64-android33.tar.xz   38038224 bytes   199 files   1065 objects in libavcodec.a
+ffmpeg-6-6.1.6-aarch64-android33.tar.gz   78249781 bytes   191 files    998 objects in libavcodec.a
+ffmpeg-7-7.1.5-aarch64-android33.tar.gz   80617790 bytes   192 files   1030 objects in libavcodec.a
+ffmpeg-8-8.1.3-aarch64-android33.tar.gz   84355687 bytes   198 files   1064 objects in libavcodec.a
+ffmpeg-9-9.0.2-aarch64-android33.tar.gz   84917329 bytes   199 files   1065 objects in libavcodec.a
 ```
 
 They land in `dist/` (git-ignored) next to `SHA256SUMS`. The script builds
 nothing: it packs what the nest already holds, and then the dependencies, so the
-result links on its own. Give it a directory to write somewhere else, and a nest
-to read from elsewhere:
+result links on its own. gzip at level 1 - pigz if the machine has it - makes the
+four take about three minutes to pack where xz took six, and two to three times
+the size; `COMPRESS` packs them differently. Give it a directory to write
+somewhere else, and a nest to read from elsewhere:
 
 ```sh
 $ RETROLUNAR_NEST=/other/nest sh export.sh /tmp/out
@@ -82,14 +83,14 @@ $ RETROLUNAR_NEST=/other/nest sh export.sh /tmp/out
 
 ```sh
 $ sha256sum -c dist/SHA256SUMS
-ffmpeg-6-6.1.6-aarch64-android33.tar.xz: OK
-ffmpeg-7-7.1.5-aarch64-android33.tar.xz: OK
-ffmpeg-8-8.1.3-aarch64-android33.tar.xz: OK
-ffmpeg-9-9.0.2-aarch64-android33.tar.xz: OK
+ffmpeg-6-6.1.6-aarch64-android33.tar.gz: OK
+ffmpeg-7-7.1.5-aarch64-android33.tar.gz: OK
+ffmpeg-8-8.1.3-aarch64-android33.tar.gz: OK
+ffmpeg-9-9.0.2-aarch64-android33.tar.gz: OK
 
-$ tar -tJf dist/ffmpeg-9-9.0.2-aarch64-android33.tar.xz | grep -cE '^lib/libav[^/]*\.(a|so)$'
+$ tar -tzf dist/ffmpeg-9-9.0.2-aarch64-android33.tar.gz | grep -cE '^lib/lib(av|sw)[^/]*\.(a|so)$'
 14
-$ tar -tJf dist/ffmpeg-9-9.0.2-aarch64-android33.tar.xz | grep -E '^lib/(libbz2|liblzma|libmp3lame|libopus|libvpx|libz)\.' | sort
+$ tar -tzf dist/ffmpeg-9-9.0.2-aarch64-android33.tar.gz | grep -E '^lib/(libbz2|liblzma|libmp3lame|libopus|libvpx|libz)\.' | sort
 lib/libbz2.a
 lib/liblzma.a
 lib/libmp3lame.a
@@ -105,7 +106,7 @@ The version in each name is read from `include/libavutil/ffversion.h` inside the
 built prefix, so a tarball cannot claim a version its library does not carry:
 
 ```sh
-$ tar -xJOf dist/ffmpeg-9-9.0.2-aarch64-android33.tar.xz include/libavutil/ffversion.h |
+$ tar -xzOf dist/ffmpeg-9-9.0.2-aarch64-android33.tar.gz include/libavutil/ffversion.h |
     grep FFMPEG_VERSION
 #define FFMPEG_VERSION "9.0.2"
 ```
@@ -113,7 +114,7 @@ $ tar -xJOf dist/ffmpeg-9-9.0.2-aarch64-android33.tar.xz include/libavutil/ffver
 ## Use one
 
 ```sh
-$ tar -C /some/prefix -xf dist/ffmpeg-6-6.1.6-aarch64-android33.tar.xz
+$ tar -C /some/prefix -xf dist/ffmpeg-6-6.1.6-aarch64-android33.tar.gz
 ```
 
 Each tarball holds `lib/`, `include/` and `share/`: seven `.a` and seven `.so`

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Turn the four built FFmpeg prefixes into dist/*.tar.xz - one tarball each,
+# Turn the four built FFmpeg prefixes into dist/*.tar.gz - one tarball each,
 # with the dependencies inside, so a tarball can be linked against on its own.
 #
 #   sh export.sh [OUT-DIR]        (default: ./dist)
@@ -23,12 +23,17 @@
 # Nothing lands in OUT-DIR until all four are packed, so a run that fails leaves
 # that directory as it was, checksums included.
 #
+# gzip, at the fast end, and pigz over it when the machine has pigz: these are
+# libraries to be linked, and a hand-over that takes minutes to pack is one
+# nobody reruns. Set COMPRESS to pack them differently.
+#
 # The version in each name is read from the library itself
 # (include/libavutil/ffversion.h), not from a recipe or a file name.
 #
 #   RETROLUNAR           the tool to ask for the closure (default: retrolunar)
 #   RETROLUNAR_PACKAGES  the recipe tree (default: the checkout beside this one)
 #   RETROLUNAR_NEST      the nest to read (default: the tool's own)
+#   COMPRESS             the compressor before the redirect (default: see below)
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -40,20 +45,20 @@ out=${1:-$here/dist}
 sys=aarch64-android33
 targets="ffmpeg-6 ffmpeg-7 ffmpeg-8 ffmpeg-9"
 work=$out/.staging
-# xz on ~150 MB of archives is the slow part; two threads instead of one keeps
-# it honest without eating the machine.
-XZ_OPT=${XZ_OPT:--T2}
-export XZ_OPT
-
-# The tool has to be told where the recipes are: it answers the closure out of
-# that tree's graph, and its own fallback ($HOME/.cache/retrolunar/packages) is
-# not where these entries came from. Name the checkout beside this project
-# unless something else is named here.
-packages=${RETROLUNAR_PACKAGES:-$here/../retrolunar2-packages}
-if [ ! -d "$packages" ]; then
-    echo "no recipe tree at $packages - set RETROLUNAR_PACKAGES" >&2
-    exit 1
+# Fast first: pigz with every core if it is there, plain gzip at level 1 if not.
+if [ -z "${COMPRESS:-}" ]; then
+    if command -v pigz >/dev/null 2>&1; then
+        COMPRESS="pigz -1"
+    else
+        COMPRESS="gzip -1"
+    fi
 fi
+
+# The tree: by default none is named, and the tool fetches its own -
+# retrolunar2-packages, cloned into $HOME/.cache/retrolunar/packages on first
+# use. Nothing here points at a checkout on one machine. RETROLUNAR_PACKAGES
+# names a tree when the recipes come from somewhere else.
+packages=${RETROLUNAR_PACKAGES:-}
 
 rm -rf "$work"
 mkdir -p "$work"
@@ -82,8 +87,17 @@ for p in $targets; do
 
     # The tool knows the closure; ask it, and let its libraries join lib/. A name
     # the prefix already carries wins - that is the same build, not a second one.
-    "$RL" --packages "$packages" export --to "$closure" "$p@$sys" >"$work/export-$name.log" 2>&1 || {
-        echo "$p: retrolunar export failed:"; tail -3 "$work/export-$name.log"; exit 1; }
+    rc=0
+    if [ -n "$packages" ]; then
+        "$RL" --packages "$packages" export --to "$closure" "$p@$sys" \
+            >"$work/export-$name.log" 2>&1 || rc=$?
+    else
+        "$RL" export --to "$closure" "$p@$sys" \
+            >"$work/export-$name.log" 2>&1 || rc=$?
+    fi
+    if [ "$rc" != 0 ]; then
+        echo "$p: retrolunar export failed:"; tail -3 "$work/export-$name.log"; exit 1
+    fi
     for f in "$closure"/*; do
         b=$(basename "$f")
         [ -e "$stage/lib/$b" ] || cp -a "$f" "$stage/lib/"
@@ -99,17 +113,17 @@ for p in $targets; do
     members="lib include"
     [ -d "$stage/share" ] && members="$members share"
     # shellcheck disable=SC2086
-    tar -C "$stage" -cJf "$work/$name.tar.xz" $members
+    tar -C "$stage" -cf - $members | $COMPRESS > "$work/$name.tar.gz"
 
-    sum=$(sha256sum "$work/$name.tar.xz" | cut -d' ' -f1)
-    printf '%s  %s\n' "$sum" "$name.tar.xz" >> "$work/SHA256SUMS"
+    sum=$(sha256sum "$work/$name.tar.gz" | cut -d' ' -f1)
+    printf '%s  %s\n' "$sum" "$name.tar.gz" >> "$work/SHA256SUMS"
     printf '%-33s %10s bytes  %4s files  %5s objects in libavcodec.a\n' \
-        "$name.tar.xz" "$(stat -c %s "$work/$name.tar.xz")" \
+        "$name.tar.gz" "$(stat -c %s "$work/$name.tar.gz")" \
         "$(find "$stage" -type f | wc -l)" "$(ar t "$stage/lib/libavcodec.a" | wc -l)"
 done
 
 # All four packed, so now, and only now, they replace what is in OUT-DIR.
-mv "$work"/*.tar.xz "$work/SHA256SUMS" "$out/"
+mv "$work"/*.tar.gz "$work/SHA256SUMS" "$out/"
 rm -rf "$work"
 
 echo
