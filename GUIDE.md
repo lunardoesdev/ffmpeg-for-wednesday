@@ -29,6 +29,12 @@ $ ./builddir/retrolunar --help
 $ RETROLUNAR=~/ond/git/retrolunar2/builddir/retrolunar sh export.sh
 ```
 
+- The recipe tree the entries were built from: the `retrolunar2-packages`
+  checkout beside this project, or whatever `RETROLUNAR_PACKAGES` names. The
+  script names it on every call, which matters because a tree is where the
+  closure is read from; the tool's own default (2.14 and later) is that same
+  repository, cloned into `~/.cache/retrolunar/packages` on first use.
+
 - Check that the entries are there:
 
 ```sh

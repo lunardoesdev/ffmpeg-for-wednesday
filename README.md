@@ -24,8 +24,15 @@ Step by step, the commands and what they print, is in [GUIDE.md](GUIDE.md).
 ```sh
 sh export.sh              # -> dist/ffmpeg-<version>-aarch64-android33.tar.xz
 RETROLUNAR=~/ond/git/retrolunar2/builddir/retrolunar sh export.sh   # tool elsewhere
+RETROLUNAR_PACKAGES=/other/tree sh export.sh                        # recipes elsewhere
 RETROLUNAR_NEST=/other/nest sh export.sh /tmp/out                   # a nest elsewhere
 ```
+
+`RETROLUNAR_PACKAGES` defaults to the `retrolunar2-packages` checkout beside
+this project. Naming it explicitly is the point: a tree is where the closure is
+read from, and the tool's own default - the same repository, cloned into
+`~/.cache/retrolunar/packages` on first use - is not the checkout the entries
+were built from.
 
 The script builds nothing: it packs the four entries the nest already holds, and
 asks the tool which libraries each branch's tarball has to carry. Those entries

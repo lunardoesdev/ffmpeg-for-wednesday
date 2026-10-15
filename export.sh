@@ -20,11 +20,15 @@
 # a linker needs; the .pc files are rewritten to point at that lib/ rather than
 # the nest, so they answer for a tarball unpacked anywhere.
 #
+# Nothing lands in OUT-DIR until all four are packed, so a run that fails leaves
+# that directory as it was, checksums included.
+#
 # The version in each name is read from the library itself
 # (include/libavutil/ffversion.h), not from a recipe or a file name.
 #
-#   RETROLUNAR       the tool to ask for the closure (default: retrolunar)
-#   RETROLUNAR_NEST  the nest to read (default: the tool's own)
+#   RETROLUNAR           the tool to ask for the closure (default: retrolunar)
+#   RETROLUNAR_PACKAGES  the recipe tree (default: the checkout beside this one)
+#   RETROLUNAR_NEST      the nest to read (default: the tool's own)
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -41,8 +45,16 @@ work=$out/.staging
 XZ_OPT=${XZ_OPT:--T2}
 export XZ_OPT
 
-mkdir -p "$out"
-: > "$out/SHA256SUMS"
+# The tool has to be told where the recipes are: it answers the closure out of
+# that tree's graph, and its own fallback ($HOME/.cache/retrolunar/packages) is
+# not where these entries came from. Name the checkout beside this project
+# unless something else is named here.
+packages=${RETROLUNAR_PACKAGES:-$here/../retrolunar2-packages}
+if [ ! -d "$packages" ]; then
+    echo "no recipe tree at $packages - set RETROLUNAR_PACKAGES" >&2
+    exit 1
+fi
+
 rm -rf "$work"
 mkdir -p "$work"
 
@@ -70,7 +82,7 @@ for p in $targets; do
 
     # The tool knows the closure; ask it, and let its libraries join lib/. A name
     # the prefix already carries wins - that is the same build, not a second one.
-    "$RL" export --to "$closure" "$p@$sys" >"$work/export-$name.log" 2>&1 || {
+    "$RL" --packages "$packages" export --to "$closure" "$p@$sys" >"$work/export-$name.log" 2>&1 || {
         echo "$p: retrolunar export failed:"; tail -3 "$work/export-$name.log"; exit 1; }
     for f in "$closure"/*; do
         b=$(basename "$f")
@@ -87,15 +99,17 @@ for p in $targets; do
     members="lib include"
     [ -d "$stage/share" ] && members="$members share"
     # shellcheck disable=SC2086
-    tar -C "$stage" -cJf "$out/$name.tar.xz" $members
+    tar -C "$stage" -cJf "$work/$name.tar.xz" $members
 
-    sum=$(sha256sum "$out/$name.tar.xz" | cut -d' ' -f1)
-    printf '%s  %s\n' "$sum" "$name.tar.xz" >> "$out/SHA256SUMS"
+    sum=$(sha256sum "$work/$name.tar.xz" | cut -d' ' -f1)
+    printf '%s  %s\n' "$sum" "$name.tar.xz" >> "$work/SHA256SUMS"
     printf '%-33s %10s bytes  %4s files  %5s objects in libavcodec.a\n' \
-        "$name.tar.xz" "$(stat -c %s "$out/$name.tar.xz")" \
+        "$name.tar.xz" "$(stat -c %s "$work/$name.tar.xz")" \
         "$(find "$stage" -type f | wc -l)" "$(ar t "$stage/lib/libavcodec.a" | wc -l)"
 done
 
+# All four packed, so now, and only now, they replace what is in OUT-DIR.
+mv "$work"/*.tar.xz "$work/SHA256SUMS" "$out/"
 rm -rf "$work"
 
 echo
