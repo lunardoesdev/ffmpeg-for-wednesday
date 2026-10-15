@@ -17,6 +17,8 @@ recipes in the checkout next to this one (see `retrolunar.toml`).
 
 ## Two ways to get the tarballs
 
+Step by step, the commands and what they print, is in [GUIDE.md](GUIDE.md).
+
 **Through the tool** (the manifest is the project):
 
 ```sh
