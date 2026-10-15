@@ -22,10 +22,10 @@ export asks it for each branch's dependencies. The recipes come from the
 Step by step, the commands and what they print, is in [GUIDE.md](GUIDE.md).
 
 ```sh
-sh export.sh              # -> dist/ffmpeg-<version>-aarch64-android33.tar.xz
-RETROLUNAR=~/ond/git/retrolunar2/builddir/retrolunar sh export.sh   # tool elsewhere
-RETROLUNAR_PACKAGES=/other/tree sh export.sh                        # recipes elsewhere
-RETROLUNAR_NEST=/other/nest sh export.sh /tmp/out                   # a nest elsewhere
+sh export.sh                       # -> dist/ffmpeg-<version>-aarch64-android33.tar.xz
+RETROLUNAR=/other/retrolunar sh export.sh    # tool elsewhere
+RETROLUNAR_PACKAGES=/other/tree sh export.sh # recipes elsewhere
+RETROLUNAR_NEST=/other/nest sh export.sh /tmp/out   # a nest elsewhere
 ```
 
 `RETROLUNAR_PACKAGES` defaults to the `retrolunar2-packages` checkout beside

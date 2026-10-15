@@ -12,21 +12,23 @@ this machine, against the nest those builds live in.
 - **retrolunar2**, the tool that packed these builds - from
   <https://github.com/lunardoesdev/retrolunar2>, tag `2.14`. `export.sh` asks it
   (`retrolunar export`) which libraries a branch links against instead of keeping
-  its own list of them, and without those dependencies a tarball does not link:
+  its own list of them, and without those dependencies a tarball does not link.
+  Installed into `~/.local/bin`, which is on `PATH` here:
 
 ```sh
 $ git clone https://github.com/lunardoesdev/retrolunar2
 $ cd retrolunar2 && git checkout 2.14
-$ meson setup builddir && ninja -C builddir     # needs meson, ninja, a C compiler
-$ ./builddir/retrolunar --help
+$ meson setup builddir -Dprefix=$HOME/.local    # needs meson, ninja, a C compiler
+$ ninja -C builddir && meson install -C builddir
+$ retrolunar --help
 ```
 
   `flock`, `awk`, `tar` and `sha256sum` are wanted at run time. The tag and the
   version string disagree - `2.14` still answers `retrolunar 2.10.0` - so go by
-  the tag. Either put the binary on `PATH`, or point `RETROLUNAR` at it:
+  the tag. A tool that lives somewhere else is named on every call:
 
 ```sh
-$ RETROLUNAR=~/ond/git/retrolunar2/builddir/retrolunar sh export.sh
+$ RETROLUNAR=/path/to/retrolunar sh export.sh
 ```
 
 - The recipe tree the entries were built from: the `retrolunar2-packages`
@@ -60,11 +62,11 @@ $ retrolunar --packages ../retrolunar2-packages generate -x 'ffmpeg-6@aarch64-an
 
 ```sh
 $ cd ~/ond/git/ffmpeg-wednesday
-$ RETROLUNAR=~/ond/git/retrolunar2/builddir/retrolunar sh export.sh
-ffmpeg-6-6.1.6-aarch64-android33.tar.xz   35125396 bytes   191 files    998 objects in libavcodec.a
-ffmpeg-7-7.1.5-aarch64-android33.tar.xz   36573680 bytes   192 files   1030 objects in libavcodec.a
-ffmpeg-8-8.1.3-aarch64-android33.tar.xz   37743404 bytes   198 files   1064 objects in libavcodec.a
-ffmpeg-9-9.0.2-aarch64-android33.tar.xz   38034136 bytes   199 files   1065 objects in libavcodec.a
+$ sh export.sh
+ffmpeg-6-6.1.6-aarch64-android33.tar.xz   35126332 bytes   191 files    998 objects in libavcodec.a
+ffmpeg-7-7.1.5-aarch64-android33.tar.xz   36568924 bytes   192 files   1030 objects in libavcodec.a
+ffmpeg-8-8.1.3-aarch64-android33.tar.xz   37740000 bytes   198 files   1064 objects in libavcodec.a
+ffmpeg-9-9.0.2-aarch64-android33.tar.xz   38038224 bytes   199 files   1065 objects in libavcodec.a
 ```
 
 They land in `dist/` (git-ignored) next to `SHA256SUMS`. The script builds
