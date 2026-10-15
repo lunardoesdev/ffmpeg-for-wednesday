@@ -19,7 +19,9 @@ recipes in the checkout next to this one (see `retrolunar.toml`).
 
 Step by step, the commands and what they print, is in [GUIDE.md](GUIDE.md).
 
-**Through the tool** (the manifest is the project):
+**Through the tool** (the manifest is the project; this wants `retrolunar` on
+`PATH`, and so does the export step inside it - `export.sh` asks the tool for
+each branch's closure):
 
 ```sh
 cd ~/ond/git/ffmpeg-wednesday
@@ -41,7 +43,8 @@ name is the hash of its inputs, so a rebuild never lands on top of the old one.
 
 ```sh
 sh export.sh              # -> dist/ffmpeg-<version>-aarch64-android33.tar.xz
-RETROLUNAR_NEST=/other/nest sh export.sh /tmp/out   # a nest elsewhere
+RETROLUNAR=~/ond/git/retrolunar2/builddir/retrolunar sh export.sh   # tool elsewhere
+RETROLUNAR_NEST=/other/nest sh export.sh /tmp/out                   # a nest elsewhere
 ```
 
 ## The tarballs
@@ -66,12 +69,20 @@ Each holds an installed prefix, flat - `lib/`, `include/`, `share/`:
   symlinks: FFmpeg's Android target installs them unversioned, which is how
   Bionic's loader expects to find them (there is no `libavcodec.so.N` and
   nothing to point at one).
-- `lib/pkgconfig/libav*.pc` - seven `.pc` files
+- `lib/pkgconfig/libav*.pc` - seven `.pc` files, whose dependency links
+  `export.sh` rewrites to `${libdir}`, so they answer for a tarball unpacked
+  anywhere
+- `lib/libbz2.a`, `lib/liblzma.a`, `lib/libmp3lame.a`, `lib/libopus.a`,
+  `lib/libvpx.a`, `lib/libz.a`, `lib/libz.so*` - the libraries the branch links
+  against, packed in so the tarball links on its own
 - `include/libav*/*.h` - 137 to 145 headers, depending on the branch
 
 ```sh
 tar -C /some/prefix -xf dist/ffmpeg-9.0.2-aarch64-android33.tar.xz
 ```
+
+How to link against one, with what the missing-symbols failure and its fix
+measured, is the "Link against one" section of [GUIDE.md](GUIDE.md).
 
 ## What is not in them
 
@@ -80,29 +91,19 @@ tar -C /some/prefix -xf dist/ffmpeg-9.0.2-aarch64-android33.tar.xz
   prefix is what the tool's own hand-over has to carry for an Android target,
   because a shipped binary would load its libraries from the application's own
   directory and a bundle cannot relocate it.
-- **No dependencies.** zlib, bzip2, xz, opus, libvpx and lame are separate
-  entries. For a self-contained hand-over use the tool's cache format, which
-  carries the whole closure:
-
-  ```sh
-  retrolunar cache push --cache dist/cache ffmpeg-6@aarch64-android33
-  ```
-
-- **The `.pc` files name the build machine.** Their `prefix` is relative to the
-  file (`${pcfiledir}/../..`) and `Libs:` is just the library itself, but
-  `Libs.private:` - what a static link needs - carries absolute `-L` paths to
-  the dependencies as they were built in the nest, so `pkg-config --static`
-  wants those prefixes present.
+- **No Android system libraries.** `libc`, `libm`, `liblog`, `libdl`,
+  `libandroid`, `libmediandk`, `libcamera2ndk` and the rest are on the device,
+  and the NDK's sysroot answers their `-l` flags at link time; the tool calls
+  them platform libraries and leaves them out on purpose. Nothing has to ship
+  them.
 - **Both kinds of library**, and the external libraries compiled in are exactly
   six: `zlib`, `bzlib`, `lzma`, `libopus`, `libvpx`, `libmp3lame`. The static
   archives are linked into an application. The shared ones carry bzlib, lzma,
-  libopus, libvpx and libmp3lame inside them (the nest builds those static-only)
-  but **not zlib**: `readelf -d lib/libavcodec.so` lists
-  `NEEDED libz.so.1`, so a dynamic consumer needs that library next to them -
-  it comes from the nest's `zlib@aarch64-android33` entry,
-  `retrolunar cache push --cache dist/cache zlib@aarch64-android33`. The system
-  libraries (`libc`, `libm`, `liblog`) are on every Android. Enable more by
-  adding recipes and rebuilding with the matching `--enable-*`.
+  libopus, libvpx and libmp3lame inside them (the nest builds those static-only),
+  and zlib stays a separate `libz.so.1` - `readelf -d lib/libavcodec.so` lists
+  `NEEDED libz.so.1` - which now travels inside the same `lib/`, so a dynamic
+  consumer finds it beside the libraries that want it. Enable more by adding
+  recipes and rebuilding with the matching `--enable-*`.
 
 ## Checking
 
