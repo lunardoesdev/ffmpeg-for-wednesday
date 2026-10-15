@@ -10,21 +10,21 @@ this machine, against the nest those builds live in.
 - The four packages already built in a nest. The default is
   `~/.cache/retrolunar/nestdir`; `RETROLUNAR_NEST` points the script at another.
 - **retrolunar2**, the tool that packed these builds - from
-  <https://github.com/lunardoesdev/retrolunar2>, tag `2.14`. `export.sh` asks it
+  <https://github.com/lunardoesdev/retrolunar2>, tag `2.15`. `export.sh` asks it
   (`retrolunar export`) which libraries a branch links against instead of keeping
   its own list of them, and without those dependencies a tarball does not link.
   Installed into `~/.local/bin`, which is on `PATH` here:
 
 ```sh
 $ git clone https://github.com/lunardoesdev/retrolunar2
-$ cd retrolunar2 && git checkout 2.14
+$ cd retrolunar2 && git checkout 2.15
 $ meson setup builddir -Dprefix=$HOME/.local    # needs meson, ninja, a C compiler
 $ ninja -C builddir && meson install -C builddir
 $ retrolunar --help
 ```
 
   `flock`, `awk`, `tar` and `sha256sum` are wanted at run time. The tag and the
-  version string disagree - `2.14` still answers `retrolunar 2.10.0` - so go by
+  version string disagree - `2.15` still answers `retrolunar 2.10.0` - so go by
   the tag. A tool that lives somewhere else is named on every call:
 
 ```sh
@@ -70,7 +70,10 @@ ffmpeg-9-9.0.2-aarch64-android33.tar.gz   84917329 bytes   199 files   1065 obje
 
 They land in `dist/` (git-ignored) next to `SHA256SUMS`. The script builds
 nothing: it packs what the nest already holds, and then the dependencies, so the
-result links on its own. gzip at level 1 - pigz if the machine has it - makes the
+result links on its own. Before it reads a branch's closure it asks the tool to
+move the recipe tree forward - `--refresh-packages` - so a hand-over packs
+against the tree as it is now, not as it was the first time. gzip at level 1 -
+pigz if the machine has it - makes the
 four take about three minutes to pack where xz took six, and two to three times
 the size; `COMPRESS` packs them differently. Give it a directory to write
 somewhere else, and a nest to read from elsewhere:

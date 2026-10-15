@@ -87,12 +87,15 @@ for p in $targets; do
 
     # The tool knows the closure; ask it, and let its libraries join lib/. A name
     # the prefix already carries wins - that is the same build, not a second one.
+    # --refresh-packages: the tree moves forward before the closure is read out
+    # of it, once per branch. Offline it is a no-op that still reads the tree it
+    # has, so a hand-over never fails for want of a network.
     rc=0
     if [ -n "$packages" ]; then
-        "$RL" --packages "$packages" export --to "$closure" "$p@$sys" \
+        "$RL" --refresh-packages --packages "$packages" export --to "$closure" "$p@$sys" \
             >"$work/export-$name.log" 2>&1 || rc=$?
     else
-        "$RL" export --to "$closure" "$p@$sys" \
+        "$RL" --refresh-packages export --to "$closure" "$p@$sys" \
             >"$work/export-$name.log" 2>&1 || rc=$?
     fi
     if [ "$rc" != 0 ]; then

@@ -5,7 +5,7 @@ with the NDK r29 toolchain through [retrolunar2](https://github.com/lunardoesdev
 handed over as one tarball each.
 
 Built and exported with **retrolunar2** -
-<https://github.com/lunardoesdev/retrolunar2>, tag `2.14`; its `--version` still
+<https://github.com/lunardoesdev/retrolunar2>, tag `2.15`; its `--version` still
 answers `2.10.0`, so go by the tag. `meson setup builddir && ninja -C builddir`
 is the whole build of it, and it has to be installed for anything here: the
 export asks it for each branch's dependencies. The recipes come from the
