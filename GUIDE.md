@@ -39,16 +39,15 @@ $ ls -d ~/.cache/retrolunar/nestdir/ffmpeg-*@aarch64-android33
 /home/satori/.cache/retrolunar/nestdir/ffmpeg-9@aarch64-android33
 ```
 
-If one is missing, build it - this is the manifest's own build, which brings the
-four in and nothing else. That route goes through the tool, so it wants
-`retrolunar` on `PATH`, and it wants the recipes: the manifest names
-`../retrolunar2-packages`, so have that checkout beside this one -
-<https://github.com/lunardoesdev/retrolunar2-packages>, tag `2.14`:
+If one is missing, build it from the recipe tree - a clone of
+<https://github.com/lunardoesdev/retrolunar2-packages>, tag `2.14`, beside this
+project. `generate -x` writes the build script for one target and its
+dependencies, and runs it:
 
 ```sh
 $ git clone https://github.com/lunardoesdev/retrolunar2-packages ~/ond/git/retrolunar2-packages
 $ cd ~/ond/git/ffmpeg-wednesday
-$ retrolunar --no-default-repo run true
+$ retrolunar --packages ../retrolunar2-packages generate -x 'ffmpeg-6@aarch64-android33'
 ```
 
 ## Make the tarballs

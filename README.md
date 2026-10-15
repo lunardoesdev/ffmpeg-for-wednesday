@@ -9,46 +9,32 @@ Built and exported with **retrolunar2** -
 answers `2.10.0`, so go by the tag. `meson setup builddir && ninja -C builddir`
 is the whole build of it, and it has to be installed for anything here: the
 export asks it for each branch's dependencies. The recipes come from the
-`retrolunar2-packages` checkout next to this one (see `retrolunar.toml`).
+`retrolunar2-packages` checkout next to this one.
 
 ## What is here
 
-- `retrolunar.toml` - the manifest: the four targets, where the recipes come
-  from, and a `build` that packs the result. The project is the hand-over, so
-  its "build" is the export.
 - `export.sh` - writes one `*.tar.xz` per version plus `SHA256SUMS`.
+- `GUIDE.md` - the walk-through, command by command.
 - `dist/` - where `sh export.sh` writes (produced, not committed).
 
-## Two ways to get the tarballs
+## Getting the tarballs
 
 Step by step, the commands and what they print, is in [GUIDE.md](GUIDE.md).
-
-**Through the tool** (the manifest is the project; this wants `retrolunar` on
-`PATH`, and so does the export step inside it - `export.sh` asks the tool for
-each branch's closure):
-
-```sh
-cd ~/ond/git/ffmpeg-wednesday
-retrolunar --no-default-repo build    # builds the four deps, then packs them
-```
-
-`--no-default-repo` matters here: this manifest names a repository, and the
-default tree the tool keeps also carries `system@aarch64-android33`. With both
-in play the system directory came out as a two-element list joined by a colon
-(`/home/satori/ond/git/retrolunar2-packages:/home/satori/.cache/retrolunar/repos/default/system@aarch64-android33`,
-measured) and CMake refused it as a toolchain file path; with one tree the
-system directory is one directory again.
-
-The tarballs land in this project's own entry under the nest, at
-`<nest>/ffmpeg-wednesday@clang-native/share/ffmpeg-wednesday/`, and the entry's
-name is the hash of its inputs, so a rebuild never lands on top of the old one.
-
-**With the script alone** (packs what the nest already holds, builds nothing):
 
 ```sh
 sh export.sh              # -> dist/ffmpeg-<version>-aarch64-android33.tar.xz
 RETROLUNAR=~/ond/git/retrolunar2/builddir/retrolunar sh export.sh   # tool elsewhere
 RETROLUNAR_NEST=/other/nest sh export.sh /tmp/out                   # a nest elsewhere
+```
+
+The script builds nothing: it packs the four entries the nest already holds, and
+asks the tool which libraries each branch's tarball has to carry. Those entries
+came from retrolunar2 built against the recipes in the `retrolunar2-packages`
+checkout next to this one - <https://github.com/lunardoesdev/retrolunar2-packages>,
+tag `2.14` - one branch at a time:
+
+```sh
+retrolunar --packages ../retrolunar2-packages generate -x 'ffmpeg-9@aarch64-android33'
 ```
 
 ## The tarballs
