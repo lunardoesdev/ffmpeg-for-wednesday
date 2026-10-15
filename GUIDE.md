@@ -9,10 +9,21 @@ this machine, against the nest those builds live in.
 
 - The four packages already built in a nest. The default is
   `~/.cache/retrolunar/nestdir`; `RETROLUNAR_NEST` points the script at another.
-- The tool, for the dependencies. `export.sh` asks `retrolunar export` which
-  libraries a branch links against, rather than keeping its own list of them. On
-  this machine the binary is not installed, so point `RETROLUNAR` at the build
-  tree:
+- **retrolunar2**, the tool that packed these builds - from
+  <https://github.com/lunardoesdev/retrolunar2>, tag `2.14`. `export.sh` asks it
+  (`retrolunar export`) which libraries a branch links against instead of keeping
+  its own list of them, and without those dependencies a tarball does not link:
+
+```sh
+$ git clone https://github.com/lunardoesdev/retrolunar2
+$ cd retrolunar2 && git checkout 2.14
+$ meson setup builddir && ninja -C builddir     # needs meson, ninja, a C compiler
+$ ./builddir/retrolunar --help
+```
+
+  `flock`, `awk`, `tar` and `sha256sum` are wanted at run time. The tag and the
+  version string disagree - `2.14` still answers `retrolunar 2.10.0` - so go by
+  the tag. Either put the binary on `PATH`, or point `RETROLUNAR` at it:
 
 ```sh
 $ RETROLUNAR=~/ond/git/retrolunar2/builddir/retrolunar sh export.sh
@@ -30,9 +41,12 @@ $ ls -d ~/.cache/retrolunar/nestdir/ffmpeg-*@aarch64-android33
 
 If one is missing, build it - this is the manifest's own build, which brings the
 four in and nothing else. That route goes through the tool, so it wants
-`retrolunar` on `PATH`:
+`retrolunar` on `PATH`, and it wants the recipes: the manifest names
+`../retrolunar2-packages`, so have that checkout beside this one -
+<https://github.com/lunardoesdev/retrolunar2-packages>, tag `2.14`:
 
 ```sh
+$ git clone https://github.com/lunardoesdev/retrolunar2-packages ~/ond/git/retrolunar2-packages
 $ cd ~/ond/git/ffmpeg-wednesday
 $ retrolunar --no-default-repo run true
 ```
